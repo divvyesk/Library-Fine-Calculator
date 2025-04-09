@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; padding: 20px; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { border: 1px solid black; padding: 10px; text-align: left; }
+        th { background-color: #f4f4f4; }
+        button { cursor: pointer; padding: 5px 10px; }
+    </style>
+
+</head>
+<body>
+    <h2>Library Late Fee Calculator</h2>
+        <table id="libraryTable">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Book</th>
+                    <th>Email</th>
+                    <th>Date Issued</th>
+                    <th>Date Returned</th>
+                    <th>Fine</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Data will be inserted here -->
+            </tbody>
+        </table>
+
+
+<script>
+    const sheetAPI = "https://sheets.googleapis.com/v4/spreadsheets/1U5No7MjF-Toew06hrAbtC2Cv_JU7h3zVIZSwDFM4b88/values/Sheet1?key=AIzaSyDMoKeCW5VULTWXanUR1XQxSwyOLuhyDrk"
+
+    async function fetchLibraryData(){
+        try{
+            let response = await fetch(sheetAPI)
+            let data = await response.json()
+            let rows = data.values
+            populateTable(rows)
+        }
+
+        catch(error){
+            console.log("Error fetching data: ", error)
+        }
+    }
+
+    function populateTable(rows){
+        let tbody = document.querySelector('#libraryTable tbody')
+        tbody.innerHTML=''
+        let today = new Date()
+
+        rows.slice(1).forEach((row,index) => {
+            let [name, book , email, issueDate, returnDate, fine] = row;
+            let issuedDate = new Date(issueDate)
+            let overdueDays = Math.max(0, Math.floor((today - issuedDate) / (1000 * 60 * 60 * 24)) - 15);
+            let calculatedFine = overdueDays > 0 ? overdueDays*10 :0
+
+            let tr = document.createElement('tr')
+
+            tr.innerHTML= `
+            <td>${name}</td>
+            <td>${book}</td>
+            <td>${email}</td>
+            <td>${issueDate}</td>
+            <td>${returnDate || 'Not returned'}</td>
+            <td>₹${calculatedFine}</td>
+            <td><button onclick="sendReminder('${name}', '${book}', '${email}', ${calculatedFine})">Send Reminder</button></td>`
+            
+            tbody.appendChild(tr)
+        });
+    }
+
+        function sendReminder(name, book, email, fine){
+            let mailtoLink = `mailto:${email}?subject=Library Book Return Reminder&body=Dear ${name},%0A%0AThis is a reminder to return the book "${book}". Your overdue fine is ₹${fine}.%0A%0AThank you.`
+            window.location.href=mailtoLink
+        }
+
+        fetchLibraryData();
+    
+
+</script>
+
+</body>
+</html>
